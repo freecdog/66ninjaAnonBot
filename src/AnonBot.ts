@@ -1,4 +1,9 @@
-import { Bot, Context, InlineKeyboard } from 'grammy'
+import {
+    Bot,
+    Context,
+    InlineKeyboard,
+    webhookCallback,
+} from 'grammy'
 import { InlineKeyboardButton, InlineKeyboardMarkup, Message } from 'grammy_types'
 import i18next from './i18n.ts'
 
@@ -24,17 +29,23 @@ export class AnonBot {
     private readonly CALLBACK_REPORT_IDS_SEPARATOR = ', '
 
     private readonly bot: Bot
+    private readonly BOT_TOKEN: string
     private readonly fromToBuffer: Map<number, FromToBufferEntity>
+
+    private handleUpdate: any
 
     constructor(BOT_TOKEN: string) {
         console.log('AnonBot is starting', new Date().toISOString())
-        this.fromToBuffer = new Map()
 
-        this.bot = new Bot(BOT_TOKEN)
+        this.fromToBuffer = new Map()
+        this.BOT_TOKEN = BOT_TOKEN
+        this.bot = new Bot(this.BOT_TOKEN)
 
         this.processMessage = this.processMessage.bind(this)
         this.processCallbackReport = this.processCallbackReport.bind(this)
-        this.runBot = this.runBot.bind(this)
+        this.processWebhook = this.processWebhook.bind(this)
+        this.runBotWithPoll = this.runBotWithPoll.bind(this)
+        this.runBotWithWebhook = this.runBotWithWebhook.bind(this)
         this.startCmd = this.startCmd.bind(this)
 
         this.init()
@@ -52,10 +63,29 @@ export class AnonBot {
         this.bot.catch(this.processError)
     }
 
-    async runBot() {
-        await this.bot.api.deleteWebhook()
+    async runBotWithPoll() {
         // using long polling, read more https://grammy.dev/guide/deployment-types
+        await this.bot.api.deleteWebhook()
         return this.bot.start()
+    }
+
+    runBotWithWebhook() {
+        this.handleUpdate = webhookCallback(this.bot, 'std/http')
+        Deno.serve(this.processWebhook)
+    }
+
+    async processWebhook(req: Request) {
+        if (req.method === 'POST') {
+            const url = new URL(req.url)
+            if (url.pathname.slice(1) === this.BOT_TOKEN) {
+                try {
+                    return await this.handleUpdate(req)
+                } catch (err) {
+                    console.error('AnonBot_error_wh', JSON.stringify(err))
+                }
+            }
+        }
+        return new Response()
     }
 
     async startCmd(ctx: Context) {

@@ -1,23 +1,35 @@
 import { AnonBot } from './src/AnonBot.ts'
 import { load } from '$std/dotenv/mod.ts'
 
-const BOT_TOKEN = await getBotToken()
-const anonBot = new AnonBot(BOT_TOKEN)
-anonBot.runBot().then(() => {
+await start().then(() => {
     console.log('the bot has been stopped')
 })
 
-async function getBotToken() {
-    let BOT_TOKEN = Deno.env.get("BOT_TOKEN")
-    if (BOT_TOKEN) {
-        return BOT_TOKEN
+async function start() {
+    const { BOT_TOKEN, isDevelopment } = await getEnvConfig()
+    const anonBot = new AnonBot(BOT_TOKEN!)
+    if (isDevelopment) {
+        return anonBot.runBotWithPoll()
+    }
+    return anonBot.runBotWithWebhook()
+}
+
+async function getEnvConfig() {
+    const cfg = {
+        BOT_TOKEN: '' as string | undefined,
+        isDevelopment: false
+    }
+    cfg.BOT_TOKEN = Deno.env.get('BOT_TOKEN')
+    if (cfg.BOT_TOKEN) {
+        return cfg
     }
 
     // local config
-    const cfg = await load({ envPath: '.env.local' })
-    BOT_TOKEN = cfg['BOT_TOKEN']
-    if (!BOT_TOKEN) {
+    const envs = await load({ envPath: '.env.local' })
+    cfg.BOT_TOKEN = envs['BOT_TOKEN']
+    if (!cfg.BOT_TOKEN) {
         throw new Error('no configuration')
     }
-    return BOT_TOKEN
+    cfg.isDevelopment = true
+    return cfg
 }
