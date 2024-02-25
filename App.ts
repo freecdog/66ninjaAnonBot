@@ -10,6 +10,7 @@ anonBot.runBot().then(() => {
 async function getBotToken() {
     let BOT_TOKEN = Deno.env.get("BOT_TOKEN")
     if (BOT_TOKEN) {
+        console.log('bot_token is not falsy')
         return BOT_TOKEN
     }
 
