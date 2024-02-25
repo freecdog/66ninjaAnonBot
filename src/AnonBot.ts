@@ -53,9 +53,7 @@ export class AnonBot {
     }
 
     async runBot() {
-        console.log('runBot deleting webhook')
         await this.bot.api.deleteWebhook()
-        console.log('runBot starting the bot')
         // using long polling, read more https://grammy.dev/guide/deployment-types
         return this.bot.start()
     }
