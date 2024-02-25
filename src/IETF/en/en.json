@@ -1,0 +1,32 @@
+{
+  "callbackReport": {
+    "reportDelivered": "Your report has been delivered",
+    "reportReverted": "Your report has been reverted"
+  },
+  "help": {
+    "chatMessage": "this chat_id is {{chatId}}. Use this chat_id to send anonymous messages here",
+    "inlineSendAnonymously": "send anonymously",
+    "privateMessage": "print /help command in the chat you need to send anonymous message"
+  },
+  "newChat": {
+    "inlineSendAnonymously": "send anonymously",
+    "welcome": "Hello! This chat_id is {{chatId}}. It's highly recommended to either record it or pin it or add it to the chat description"
+  },
+  "process": {
+    "chatIdAccepted": "Your next message will be sent to the chat with id {{chatId}}",
+    "errorNoPermissions": "sorry, I can't process this message, no permissions...",
+    "errorWrongMessageType": "sorry, unsupported message type",
+    "inlineReplyAnonymously": "reply",
+    "inlineSeeInTheChat": "see in the chat",
+    "inlineSendAnonymously": "send",
+    "inputChatIdRequest": "Which chat do you want to send an anonymous message to? Please send me a chat_id in a separate message",
+    "messageSent": "The anonymous message has been sent"
+  },
+  "start": {
+    "errorFirstParam": "sorry, I expect chat_id as the first param.",
+    "errorNoPermissions": "sorry, I can't process this message, no permissions.",
+    "inputMessageRequest": "What message do you want to send anonymously to chat_id: {{chatId}}",
+    "paramsInPublicChat": "I accept start command with params only in private messages",
+    "welcome": "Welcome!\n\nFirst of all, thank you for giving a chance to AnonBot.\nThe bot allows you to send anonymous messages to a chat the bot has been added to. The bot doesn't track any users information.\n\nInfo for users:\nTo send message you need to provide chat_id to the bot in private message (use /help command in the chat to get chat_id) or use button in messages of the bot.\nOnly text messages can be sent.\n\nInfo for chat admins:\nPermissions. It's not needed to give full permissions to the bot.\nPlease make the link to the bot easily accessible for users. Pin it or add it to the group description.\n\nIt's open source and free to use, welcome https://github.com/freecdog/66tgAnonBot"
+  }
+}

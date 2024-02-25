@@ -1,0 +1,9 @@
+{
+  "imports": {
+    "$std/": "https://deno.land/std@0.217.0/",
+    "dotenv": "https://deno.land/x/dotenv@v3.2.2/mod.ts",
+    "grammy": "https://deno.land/x/grammy@v1.21.1/mod.ts",
+    "grammy_types": "https://deno.land/x/grammy@v1.21.1/types.deno.ts",
+    "i18next": "https://deno.land/x/i18next@v23.10.0/index.js"
+  }
+}
