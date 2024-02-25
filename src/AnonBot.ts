@@ -40,7 +40,7 @@ export class AnonBot {
         this.init()
     }
 
-    init(): void {
+    init() {
         this.bot.command('start', this.startCmd)
         this.bot.command('help', this.helpCmd)
 

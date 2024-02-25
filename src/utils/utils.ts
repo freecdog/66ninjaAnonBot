@@ -1,8 +1,8 @@
-import { crypto } from "$std/crypto/mod.ts"
-import * as hex from "$std/encoding/hex.ts"
+import { crypto } from '$std/crypto/mod.ts'
+import * as hex from '$std/encoding/hex.ts'
 
-import { Context } from "grammy"
-import type { Message } from "grammy_types"
+import { Context } from 'grammy'
+import type { Message } from 'grammy_types'
 
 /**
  * bot is allowed to post messages with "restricted" status. "restricted" means that it can't read
