@@ -7,7 +7,7 @@ import {
     isAcceptableMessage, 
     isAllowedToSend, 
     md5string, 
-    parseChatId 
+    parseChatId
 } from './utils/utils.ts'
 
 const EMOJI_CROSS_MARK = '❌'
@@ -27,7 +27,7 @@ export class AnonBot {
     private readonly fromToBuffer: Map<number, FromToBufferEntity>
 
     constructor(BOT_TOKEN: string) {
-        console.log('AnonBot constructor started', new Date().toISOString())
+        console.log('AnonBot is starting', new Date().toISOString())
         this.fromToBuffer = new Map()
 
         this.bot = new Bot(BOT_TOKEN)
@@ -41,8 +41,6 @@ export class AnonBot {
     }
 
     init(): void {
-        console.log('AnonBot init')
-
         this.bot.command('start', this.startCmd)
         this.bot.command('help', this.helpCmd)
 
