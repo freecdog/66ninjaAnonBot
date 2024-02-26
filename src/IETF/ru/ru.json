@@ -5,11 +5,11 @@
   },
   "help": {
     "chatMessage": "chat_id {{chatId}}. Используйте этот chat_id, чтобы отправлять анонимные сообщения в эту группу или нажмите кнопку ниже",
-    "inlineSendAnonymously": "отправить анонимно",
+    "inlineSendAnonymously": "написать анонимно",
     "privateMessage": "Используйте команду /help в чате, в котором вы хотите отправлять анонимные сообщения"
   },
   "newChat": {
-    "inlineSendAnonymously": "отправить анонимно",
+    "inlineSendAnonymously": "написать анонимно",
     "welcome": "Привет! chat_id для этой группы {{chatId}}. Рекомендуется или записать его, или запинить, или добавить в описание группы"
   },
   "process": {
@@ -18,7 +18,7 @@
     "errorWrongMessageType": "Извините, я не обрабатываю такие сообщения",
     "inlineReplyAnonymously": "ответить",
     "inlineSeeInTheChat": "посмотреть в чате",
-    "inlineSendAnonymously": "отправить",
+    "inlineSendAnonymously": "написать",
     "inputChatIdRequest": "В какой чат вы хотите отправить анонимное сообщение? Отправьте мне chat_id отдельным сообщением",
     "messageSent": "Анонимное сообщение отправлено"
   },
