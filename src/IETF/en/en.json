@@ -3,6 +3,9 @@
     "reportDelivered": "Your report has been delivered",
     "reportReverted": "Your report has been reverted"
   },
+  "cancel": {
+    "default": "chat_id has been canceled"
+  },
   "help": {
     "chatMessage": "this chat_id is {{chatId}}. Use this chat_id to send anonymous messages here",
     "inlineSendAnonymously": "send anonymously",

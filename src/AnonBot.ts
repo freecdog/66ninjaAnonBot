@@ -41,6 +41,7 @@ export class AnonBot {
         this.BOT_TOKEN = BOT_TOKEN
         this.bot = new Bot(this.BOT_TOKEN)
 
+        this.cancelCmd = this.cancelCmd.bind(this)
         this.processMessage = this.processMessage.bind(this)
         this.processCallbackReport = this.processCallbackReport.bind(this)
         this.processWebhook = this.processWebhook.bind(this)
@@ -54,6 +55,7 @@ export class AnonBot {
     init() {
         this.bot.command('start', this.startCmd)
         this.bot.command('help', this.helpCmd)
+        this.bot.command('cancel', this.cancelCmd)
 
         this.bot.on('message', this.processMessage)
 
@@ -134,6 +136,14 @@ export class AnonBot {
         }
 
         return ctx.reply(i18next.t('help.privateMessage'))
+    }
+
+    async cancelCmd(ctx: Context) {
+        if (!ctx.message) return
+        const message = ctx.message!
+        const fromUserId = message.from.id
+        await this.kv.delete([fromUserId])
+        return ctx.reply(i18next.t('cancel.default'))
     }
 
     async processMessage(ctx: Context) {

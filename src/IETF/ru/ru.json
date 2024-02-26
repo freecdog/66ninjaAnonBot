@@ -3,6 +3,9 @@
     "reportDelivered": "Ваш отзыв получен",
     "reportReverted": "Ваш отзыв отменён"
   },
+  "cancel": {
+    "default": "chat_id сброшен"
+  },
   "help": {
     "chatMessage": "chat_id {{chatId}}. Используйте этот chat_id, чтобы отправлять анонимные сообщения в эту группу или нажмите кнопку ниже",
     "inlineSendAnonymously": "написать анонимно",
