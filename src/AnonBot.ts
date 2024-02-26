@@ -8,10 +8,10 @@ import { InlineKeyboardButton, InlineKeyboardMarkup, Message } from 'grammy_type
 import i18next from './i18n.ts'
 
 import { FromToBufferEntity } from './classes/FromToBufferEntity.ts'
-import { 
-    isAcceptableMessage, 
-    isAllowedToSend, 
-    md5string, 
+import {
+    isAcceptableMessage,
+    isAllowedToSend,
+    md5string,
     parseChatId
 } from './utils/utils.ts'
 
@@ -159,7 +159,6 @@ export class AnonBot {
             return ctx.reply(i18next.t('process.errorWrongMessageType'))
         }
 
-
         if (message.text) {
             const chatId = parseChatId(message.text)
             if (chatId) {
@@ -183,7 +182,7 @@ export class AnonBot {
         // prepare action buttons (inline keyboard)
         const chatMessageIK = new InlineKeyboard()
             // .url(`bot info`, `tg://user?id=${ctx.me.id}`)
-            .url(`${i18next.t('process.inlineSendAnonymously')} ${EMOJI_RIGHT_ARROW_CURVING_LEFT}`, `https://t.me/${ctx.me.username}?start=${fromToEl.toId}`)
+            .url(`${i18next.t('process.inlineSendAnonymously')} ${EMOJI_NINJA}`, `https://t.me/${ctx.me.username}?start=${fromToEl.toId}`)
             .text(`${EMOJI_CROSS_MARK}`, 'callbackReport')
         const otherOptions = { reply_markup: chatMessageIK }
         // add a quote to the other message
@@ -194,22 +193,26 @@ export class AnonBot {
 
         // Copy message to the group
         const messageCopy = await this.bot.api.copyMessage(fromToEl.toId, fromUserId, message.message_id, otherOptions)
+        const sentToChatInfo = await this.bot.api.getChat(fromToEl.toId)
 
-        // Add action buttons (inline keyboard) to copied message in the chat
-        const chatMessageCopyIK = new InlineKeyboard()
-            .url(`${i18next.t('process.inlineReplyAnonymously')} ${EMOJI_RIGHT_ARROW_CURVING_LEFT}`, `https://t.me/${ctx.me.username}?start=${fromToEl.toId}${this.START_PARAMS_SEPARATOR}${messageCopy.message_id}`)
-            .text(`${EMOJI_CROSS_MARK}`, 'callbackReport')
-        this.bot.api.editMessageReplyMarkup(fromToEl.toId, messageCopy.message_id, {
-            reply_markup: chatMessageCopyIK
-        }).then()
+        // if chat.type === 'group', you can't link message by message_id. When does a group become a supergroup https://stackoverflow.com/a/62291433?
+        if (sentToChatInfo.type === 'supergroup') {
+            // Add action buttons (inline keyboard) to copied message in the chat
+            const chatMessageCopyIK = new InlineKeyboard()
+                .url(`${i18next.t('process.inlineReplyAnonymously')} ${EMOJI_RIGHT_ARROW_CURVING_LEFT}`, `https://t.me/${ctx.me.username}?start=${fromToEl.toId}${this.START_PARAMS_SEPARATOR}${messageCopy.message_id}`)
+                .text(`${EMOJI_CROSS_MARK}`, 'callbackReport')
+            this.bot.api.editMessageReplyMarkup(fromToEl.toId, messageCopy.message_id, {
+                reply_markup: chatMessageCopyIK
+            }).then()
 
-        // Reply privately to the user's message
-        // TODO if chat.type != supergroup, need to check how to get the chat_id, may be take last 10 numbers? Example for group {"id": -4084936279, "type": "group"}
-        const privateMessageIK = new InlineKeyboard()
-            .url(`${i18next.t('process.inlineSeeInTheChat')} ${EMOJI_EYES}`,
-                `https://t.me/c/${fromToEl.toId.toString().slice(-10)}/${messageCopy.message_id}`)
-        return ctx.reply(i18next.t('process.messageSent'), { reply_markup: privateMessageIK})
+            // Reply privately to the user's message with button to see the message in the group
+            const privateMessageIK = new InlineKeyboard()
+                .url(`${i18next.t('process.inlineSeeInTheChat')} ${EMOJI_EYES}`,
+                    `https://t.me/c/${fromToEl.toId.toString().slice(-10)}/${messageCopy.message_id}`)
+            return ctx.reply(i18next.t('process.messageSent'), { reply_markup: privateMessageIK})
+        }
 
+        return ctx.reply(i18next.t('process.messageSent'))
         // Messages types https://core.telegram.org/bots/api#message
         // Works fine ctx.message.text (emoji too), photo, document, sticker, animation, poll, location
         // migrate_to_chat_id? group to supergroup (when chat history becomes visible for everyone)
@@ -294,4 +297,6 @@ export class AnonBot {
     // TODO STATS deleting, reporting, sending, ...
     // TODO what if reply quote? Can speed up if read chat id from the quote in private chat?
     // TODO forward message to the bot (if possible by the chat rules) to reply faster?
+    // TODO welcome or (/help) on group_chat_created
+    // TODO bot menu breaks "/start chat_id" functionality?
 }

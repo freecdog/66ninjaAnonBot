@@ -60,7 +60,11 @@ export async function md5string(data: string): Promise<string> {
     return hex.encodeHex(hashBuffer)
 }
 
-export function parseChatId(text: string): number | undefined {
+export function parseChatId(rawText: string): number | undefined {
+    let text = rawText.trim()
+    if (text.charAt(text.length - 1) === '.') {
+        text = text.substring(0, text.length - 1)
+    }
     const chatId = parseInt(text)
     if (isNaN(chatId)) return
     if (text.length !== chatId.toString().length) return
