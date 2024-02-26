@@ -1,9 +1,7 @@
 import { AnonBot } from './src/AnonBot.ts'
 import { load } from '$std/dotenv/mod.ts'
 
-await start().then(() => {
-    console.log('the bot has been stopped')
-})
+start()
 
 async function start() {
     const { BOT_TOKEN, isDevelopment } = await getEnvConfig()
