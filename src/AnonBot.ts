@@ -30,14 +30,13 @@ export class AnonBot {
 
     private readonly bot: Bot
     private readonly BOT_TOKEN: string
-    private readonly fromToBuffer: Map<number, FromToBufferEntity>
 
     private handleUpdate: any
+    private kv: Deno.Kv
 
     constructor(BOT_TOKEN: string) {
         console.log('AnonBot is starting', new Date().toISOString())
 
-        this.fromToBuffer = new Map()
         this.BOT_TOKEN = BOT_TOKEN
         this.bot = new Bot(this.BOT_TOKEN)
 
@@ -45,11 +44,21 @@ export class AnonBot {
         this.processMessage = this.processMessage.bind(this)
         this.processCallbackReport = this.processCallbackReport.bind(this)
         this.processWebhook = this.processWebhook.bind(this)
+        this.queueListener = this.queueListener.bind(this)
         this.runBotWithPoll = this.runBotWithPoll.bind(this)
         this.runBotWithWebhook = this.runBotWithWebhook.bind(this)
         this.startCmd = this.startCmd.bind(this)
 
-        this.init()
+        Deno.openKv()
+            .then((kv) => {
+                this.kv = kv
+                this.kv.listenQueue(this.queueListener)
+
+                this.init()
+            })
+            .catch((err) => {
+                console.error('AnonBot_error_kv', JSON.stringify(err))
+            })
     }
 
     init() {
@@ -90,6 +99,10 @@ export class AnonBot {
         return new Response()
     }
 
+    queueListener(message: any) {
+        this.kv.set([message.key], message.value)
+    }
+
     async startCmd(ctx: Context) {
         // console.log('AnonBot startCmd ctx', new Date().toISOString(), JSON.stringify(ctx))
         if (!ctx.message) return
@@ -118,7 +131,11 @@ export class AnonBot {
             return ctx.reply(i18next.t('start.errorNoPermissions'))
         }
 
-        this.fromToBuffer.set(fromUserId, new FromToBufferEntity(parsedChatId, parsedReplyMsgId))
+        await this.kv.enqueue({
+            key: fromUserId,
+            value: new FromToBufferEntity(parsedChatId, parsedReplyMsgId)
+        })
+
         return ctx.reply(i18next.t('start.inputMessageRequest', {chatId: parsedChatId}))
     }
 
@@ -172,17 +189,22 @@ export class AnonBot {
         if (message.text) {
             const chatId = parseChatId(message.text)
             if (chatId) {
-                this.fromToBuffer.set(fromUserId, new FromToBufferEntity(chatId))
+                await this.kv.enqueue({
+                    key: fromUserId,
+                    value: new FromToBufferEntity(chatId)
+                })
+
                 return ctx.reply(i18next.t('process.chatIdAccepted', {chatId: chatId}))
             }
         }
 
-        if (!this.fromToBuffer.has(fromUserId)) {
+        const entry = await this.kv.get([fromUserId])
+        if (!entry || !entry.value) {
             return ctx.reply(i18next.t('process.inputChatIdRequest'))
         }
 
-        const fromToEl = this.fromToBuffer.get(fromUserId)!
-        this.fromToBuffer.delete(fromUserId)
+        const fromToEl = entry.value as FromToBufferEntity
+        await this.kv.delete([fromUserId])
 
         const isAllowed = await isAllowedToSend(ctx, fromToEl.toId, ctx.me.id, fromUserId)
         if (!isAllowed) {
