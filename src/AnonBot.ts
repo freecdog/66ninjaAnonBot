@@ -8,6 +8,7 @@ import { InlineKeyboardButton, InlineKeyboardMarkup, Message } from 'grammy_type
 import i18next from './i18n.ts'
 
 import { FromToBufferEntity } from './classes/FromToBufferEntity.ts'
+import { BotKvQueueEntity } from './classes/BotKvQueueEntity.ts'
 import {
     isAcceptableMessage,
     isAllowedToSend,
@@ -99,8 +100,18 @@ export class AnonBot {
         return new Response()
     }
 
-    queueListener(message: any) {
-        this.kv.set([message.key], message.value)
+    queueListener(message: BotKvQueueEntity) {
+        switch (message.messageType) {
+            case 'set':
+                this.kv.set([message.key], message.value)
+                break
+            case 'delete':
+                this.kv.delete([message.key])
+                break
+            default:
+                console.error('AnonBot_error_queue unknown messageType')
+                break
+        }
     }
 
     async startCmd(ctx: Context) {
@@ -131,10 +142,12 @@ export class AnonBot {
             return ctx.reply(i18next.t('start.errorNoPermissions'))
         }
 
-        await this.kv.enqueue({
+        const setQ: BotKvQueueEntity = {
+            messageType: 'set',
             key: fromUserId,
-            value: new FromToBufferEntity(parsedChatId, parsedReplyMsgId)
-        })
+            value: new FromToBufferEntity(parsedChatId, parsedReplyMsgId),
+        }
+        await this.kv.enqueue(setQ)
 
         return ctx.reply(i18next.t('start.inputMessageRequest', {chatId: parsedChatId}))
     }
@@ -159,7 +172,11 @@ export class AnonBot {
         if (!ctx.message) return
         const message = ctx.message!
         const fromUserId = message.from.id
-        await this.kv.delete([fromUserId])
+        const deleteQ: BotKvQueueEntity = {
+            messageType: 'delete',
+            key: fromUserId,
+        }
+        await this.kv.enqueue(deleteQ)
         return ctx.reply(i18next.t('cancel.default'))
     }
 
@@ -189,10 +206,12 @@ export class AnonBot {
         if (message.text) {
             const chatId = parseChatId(message.text)
             if (chatId) {
-                await this.kv.enqueue({
+                const setQ: BotKvQueueEntity = {
+                    messageType: 'set',
                     key: fromUserId,
-                    value: new FromToBufferEntity(chatId)
-                })
+                    value: new FromToBufferEntity(chatId),
+                }
+                await this.kv.enqueue(setQ)
 
                 return ctx.reply(i18next.t('process.chatIdAccepted', {chatId: chatId}))
             }
@@ -204,7 +223,11 @@ export class AnonBot {
         }
 
         const fromToEl = entry.value as FromToBufferEntity
-        await this.kv.delete([fromUserId])
+        const deleteQ: BotKvQueueEntity = {
+            messageType: 'delete',
+            key: fromUserId,
+        }
+        await this.kv.enqueue(deleteQ)
 
         const isAllowed = await isAllowedToSend(ctx, fromToEl.toId, ctx.me.id, fromUserId)
         if (!isAllowed) {
