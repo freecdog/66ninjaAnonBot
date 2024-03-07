@@ -34,6 +34,7 @@ export async function startCmd(ctx: Context, kv: Deno.Kv) {
     }
 
     const setQ: BotKvQueueEntity = {
+        tableName: 'ANON_MESSAGES',
         messageType: 'set',
         key: fromUserId,
         value: new FromToBufferEntity(parsedChatId, parsedReplyMsgId),

@@ -7,6 +7,7 @@ export async function cancelCmd(ctx: Context, kv: Deno.Kv) {
     const message = ctx.message!
     const fromUserId = message.from.id
     const deleteQ: BotKvQueueEntity = {
+        tableName: 'ANON_MESSAGES',
         messageType: 'delete',
         key: fromUserId,
     }

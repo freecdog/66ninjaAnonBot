@@ -84,13 +84,13 @@ export class AnonBot {
     queueListener(message: BotKvQueueEntity) {
         switch (message.messageType) {
             case 'set':
-                this.kv.set([message.key], message.value)
+                this.kv.set([message.tableName, message.key], message.value)
                 break
             case 'delete':
-                this.kv.delete([message.key])
+                this.kv.delete([message.tableName, message.key])
                 break
             default:
-                console.error('AnonBot_error_queue unknown messageType')
+                console.error(`AnonBot_error_queue unknown messageType: ${message.messageType}; for table: ${message.tableName}`)
                 break
         }
     }
