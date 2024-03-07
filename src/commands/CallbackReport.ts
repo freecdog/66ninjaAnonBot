@@ -20,12 +20,13 @@ export async function processCallbackReport(ctx: Context, kv: Deno.Kv) {
         return
     }
 
-    recordReceivedCallback(kv)
-
     const callback_query = ctx.update.callback_query
     const message = callback_query.message!
+    const chatId = message.chat.id
     const fromUserId = callback_query.from.id.toString()
     const fromUserIdHash = (await md5string(fromUserId)).slice(-5)    // last 5 symbols of the md5 hash of a user id
+
+    recordReceivedCallback(kv, chatId)
 
     // copy message inline keyboard
     const replyMarkup : InlineKeyboardMarkup = structuredClone(message.reply_markup)
@@ -65,6 +66,8 @@ export async function processCallbackReport(ctx: Context, kv: Deno.Kv) {
     // displays text message on the top of the current chat
     ctx.answerCallbackQuery(callbackUserAnswer).then()
 
+    // TODO use kv([ "CHATS", chatId, "SETTINGS" ]).value.reportsNeededForDeletion, make settings
+    // make /settings command and /settingsReset
     if (reportsCount >= REPORTS_NEEDED_TO_DELETE) {
         return ctx.deleteMessage()
     }

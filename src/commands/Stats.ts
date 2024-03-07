@@ -26,6 +26,7 @@ import i18next from '../i18n.ts'
 // 			date		: bool
 // 		+MESSAGES_PUBLISHED_COUNT	: Deno.KvU64
 // 		-MESSAGES_DELETED_COUNT		: Deno.KvU64
+//      +CALLBACKS_RECEIVED_COUNT   : Deno.KvU64
 
 // +ANON_MESSAGES
 // 	user_id				: { "toId": "number", "msgId": "number" }
@@ -38,9 +39,7 @@ export async function statsCmd(ctx: Context, kv: Deno.Kv, STATS_SECRET: string) 
     await recordReceivedCommand(kv)
 
     if (message.chat.type !== 'private') {
-        const chatPublishedMessagesRes = await countChatMessagesPublished(kv, message.chat.id)
-        const chatPublishedMessages = chatPublishedMessagesRes.value as bigint
-        return ctx.reply(i18next.t('stats.info', {chatPublishedMessages}))
+        return chatStats(ctx, message, kv)
     }
 
     if (message.text?.split(' ')[1] !== STATS_SECRET) {
@@ -74,6 +73,24 @@ the rest in the console...`)
 // DEBUG SECTION
     // const dump = await getKVDumpByPrefix(kv, [])
     // console.log('dump', dump)
+}
+
+async function chatStats(ctx: Context, message: Message, kv: Deno.Kv) {
+    const chatId = message.chat.id
+    const [
+        chatPublishedMessagesRes,
+        chatCallbacksReceivedRes,
+    ] = await Promise.all([
+        countChatMessagesPublished(kv, chatId),
+        countChatCallbacksReceivedCount(kv, chatId),
+    ])
+    const chatPublishedMessages = chatPublishedMessagesRes.value as bigint
+    const chatCallbacksReceived = chatCallbacksReceivedRes.value as bigint
+    return ctx.reply(i18next.t('stats.info', {
+        chatPublishedMessages, 
+        chatCallbacksReceived,
+        chatMessagesDeleted: 'TBD'
+    }))
 }
 
 export function inviteToGroup(kv: Deno.Kv, message: Message) {
@@ -206,16 +223,22 @@ function countAllReceivedCommands(kv: Deno.Kv) {
     return kv.get(statsCommandsReceivedKey)
 }
 
-export function recordReceivedCallback(kv: Deno.Kv) {
+export function recordReceivedCallback(kv: Deno.Kv, chatId: number) {
     const statsCallbacksReceivedKey = ['STATS', 'CALLBACKS_RECEIVED']
+    const chatCallbacksReceivedCountKey = ['CHATS', chatId, 'CALLBACKS_RECEIVED_COUNT']
     const u64 = new Deno.KvU64(1n)
     return kv.atomic()
         .sum(statsCallbacksReceivedKey, u64.value)
+        .sum(chatCallbacksReceivedCountKey, u64.value)
         .commit()
 }
 function countAllReceivedCallbacks(kv: Deno.Kv) {
     const statsCallbacksReceivedKey = ['STATS', 'CALLBACKS_RECEIVED']
     return kv.get(statsCallbacksReceivedKey)
+}
+function countChatCallbacksReceivedCount(kv: Deno.Kv, chatId: number) {
+    const chatCallbacksReceivedCountKey = ['CHATS', chatId, 'CALLBACKS_RECEIVED_COUNT']
+    return kv.get(chatCallbacksReceivedCountKey)
 }
 
 export function recordChatActivity(kv: Deno.Kv, value: boolean) {
