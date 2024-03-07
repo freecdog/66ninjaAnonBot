@@ -9,7 +9,7 @@ import i18next from '../i18n.ts'
 
 // 	+CHAT_IDS_RECEIVED		: BigInt
 // 	+MESSAGES_PUBLISHED		: Deno.KvU64
-// 	-MESSAGES_DELETED		: Deno.KvU64
+// 	+MESSAGES_DELETED		: Deno.KvU64
 	
 // 	+CALLBACKS_RECEIVED		: Deno.KvU64
 // 	+COMMANDS_RECEIVED		: Deno.KvU64
@@ -25,12 +25,14 @@ import i18next from '../i18n.ts'
 // 		+MESSAGES_PUBLISHED_DATES
 // 			date		: bool
 // 		+MESSAGES_PUBLISHED_COUNT	: Deno.KvU64
-// 		-MESSAGES_DELETED_COUNT		: Deno.KvU64
+// 		+MESSAGES_DELETED_COUNT		: Deno.KvU64
 //      +CALLBACKS_RECEIVED_COUNT   : Deno.KvU64
 
 // +ANON_MESSAGES
 // 	user_id				: { "toId": "number", "msgId": "number" }
 
+// TODO MESSAGES_DELETED_COUNT
+// TODO change Settings
 
 export async function statsCmd(ctx: Context, kv: Deno.Kv, STATS_SECRET: string) {
     if (!ctx.message) return
@@ -52,12 +54,14 @@ export async function statsCmd(ctx: Context, kv: Deno.Kv, STATS_SECRET: string) 
         chatIdsRes,
         commandsRes,
         messagesRes,
+        deletedRes,
     ] = await countAllOperations(kv)
     const publishedMessagesCount = publishedMessagesRes.value as bigint
     const callbacksCount = callbacksRes.value as bigint
     const chatIdsCount = chatIdsRes.value as bigint
     const commandsCount = commandsRes.value as bigint
     const messagesCount = messagesRes.value as bigint
+    const deletedCount = deletedRes.value as bigint
 
     const activeChats = (await countAllActiveChats(kv)).value as bigint
 
@@ -68,7 +72,7 @@ ReceivedChatIds: ${chatIdsCount}
 PublishedMessages: ${publishedMessagesCount}
 ReceivedCommands: ${commandsCount}
 ReceivedCallbacks: ${callbacksCount}
-the rest in the console...`)
+DeletedMessages: ${deletedCount}`)
 
 // DEBUG SECTION
     // const dump = await getKVDumpByPrefix(kv, [])
@@ -80,16 +84,19 @@ async function chatStats(ctx: Context, message: Message, kv: Deno.Kv) {
     const [
         chatPublishedMessagesRes,
         chatCallbacksReceivedRes,
+        chatMessagesDeletedRes,
     ] = await Promise.all([
         countChatMessagesPublished(kv, chatId),
         countChatCallbacksReceivedCount(kv, chatId),
+        countChatMessagesDeletedCount(kv, chatId),
     ])
     const chatPublishedMessages = chatPublishedMessagesRes.value as bigint
     const chatCallbacksReceived = chatCallbacksReceivedRes.value as bigint
+    const chatMessagesDeleted = chatMessagesDeletedRes.value as bigint
     return ctx.reply(i18next.t('stats.info', {
         chatPublishedMessages, 
         chatCallbacksReceived,
-        chatMessagesDeleted: 'TBD'
+        chatMessagesDeleted,
     }))
 }
 
@@ -241,6 +248,24 @@ function countChatCallbacksReceivedCount(kv: Deno.Kv, chatId: number) {
     return kv.get(chatCallbacksReceivedCountKey)
 }
 
+export function recordMessageDeletion(kv: Deno.Kv, chatId: number) {
+    const statsMessagesDeletedKey = ['STATS', 'MESSAGES_DELETED']
+    const chatMessagesDeletedCountKey = ['CHATS', chatId, 'MESSAGES_DELETED_COUNT']
+    const u64 = new Deno.KvU64(1n)
+    return kv.atomic()
+        .sum(statsMessagesDeletedKey, u64.value)
+        .sum(chatMessagesDeletedCountKey, u64.value)
+        .commit()
+}
+function countAllMessagesDeleted(kv: Deno.Kv) {
+    const statsMessagesDeletedKey = ['STATS', 'MESSAGES_DELETED']
+    return kv.get(statsMessagesDeletedKey)
+}
+function countChatMessagesDeletedCount(kv: Deno.Kv, chatId: number) {
+    const chatMessagesDeletedCountKey = ['CHATS', chatId, 'MESSAGES_DELETED_COUNT']
+    return kv.get(chatMessagesDeletedCountKey)
+}
+
 export function recordChatActivity(kv: Deno.Kv, value: boolean) {
     const statsActiveChatsKey = ['STATS', 'ACTIVE_CHATS']
     
@@ -276,6 +301,7 @@ function countAllOperations(kv: Deno.Kv) {
         countAllReceivedChatIds(kv),
         countAllReceivedCommands(kv),
         countAllReceivedMessages(kv),
+        countAllMessagesDeleted(kv),
     ])
 }
 
@@ -283,6 +309,10 @@ function countAllOperations(kv: Deno.Kv) {
 function changeChatSettings(kv: Deno.Kv, chatId: number, settings: any) {
     const chatSettingsKey = ['CHATS', chatId, 'SETTINGS']
     return kv.set(chatSettingsKey, settings)
+}
+export function getChatSettings(kv: Deno.Kv, chatId: number) {
+    const chatSettingsKey = ['CHATS', chatId, 'SETTINGS']
+    return kv.get(chatSettingsKey)
 }
 
 function countChatMessagesPublished(kv: Deno.Kv, chatId: number) {

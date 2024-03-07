@@ -1,14 +1,18 @@
 import { Context } from 'grammy'
 import { InlineKeyboardButton, InlineKeyboardMarkup } from 'grammy_types'
 import i18next from '../i18n.ts'
-import { 
+import {
     CALLBACK_REPORT_IDS_SEPARATOR,
     CALLBACK_REPORT_SEPARATOR,
     EMOJI_CROSS_MARK,
     REPORTS_NEEDED_TO_DELETE,
 } from '../consts.ts'
 import { md5string } from '../utils/utils.ts'
-import { recordReceivedCallback } from './Stats.ts'
+import {
+    getChatSettings,
+    recordMessageDeletion,
+    recordReceivedCallback,
+} from './Stats.ts'
 
 const countCrosses = RegExp(String.raw`${EMOJI_CROSS_MARK}`, 'g')
 
@@ -66,9 +70,14 @@ export async function processCallbackReport(ctx: Context, kv: Deno.Kv) {
     // displays text message on the top of the current chat
     ctx.answerCallbackQuery(callbackUserAnswer).then()
 
-    // TODO use kv([ "CHATS", chatId, "SETTINGS" ]).value.reportsNeededForDeletion, make settings
-    // make /settings command and /settingsReset
-    if (reportsCount >= REPORTS_NEEDED_TO_DELETE) {
+    let reportsNeeded = REPORTS_NEEDED_TO_DELETE
+    const chatSettings = await getChatSettings(kv, chatId)
+    if (chatSettings.value) {
+        reportsNeeded = chatSettings.value.reportsNeededForDeletion || REPORTS_NEEDED_TO_DELETE
+    }
+
+    if (reportsCount >= reportsNeeded) {
+        recordMessageDeletion(kv, chatId)
         return ctx.deleteMessage()
     }
     return ctx.editMessageReplyMarkup({ reply_markup: replyMarkup })

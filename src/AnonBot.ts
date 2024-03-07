@@ -106,4 +106,5 @@ export class AnonBot {
     // TODO what if reply quote? Can speed up if read chat id from the quote in private chat?
     // TODO forward message to the bot (if possible by the chat rules) to reply faster?
     // TODO should/could all requests be enqueued?
+    // TODO make /settings command and /settingsReset
 }
