@@ -4,11 +4,14 @@ import { BotKvQueueEntity } from '../classes/BotKvQueueEntity.ts'
 import { START_PARAMS_SEPARATOR } from '../consts.ts'
 import { isAllowedToSend, parseChatId } from '../utils/utils.ts'
 import { FromToBufferEntity } from '../classes/FromToBufferEntity.ts'
+import { recordReceivedCommand } from './Stats.ts'
 
 export async function startCmd(ctx: Context, kv: Deno.Kv) {
     // console.log('AnonBot startCmd ctx', new Date().toISOString(), JSON.stringify(ctx))
     if (!ctx.message) return
     const message = ctx.message!
+
+    recordReceivedCommand(kv)
 
     if (!ctx.match) {
         return ctx.reply(i18next.t('start.welcome'))

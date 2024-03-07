@@ -2,10 +2,13 @@ import { Context, InlineKeyboard } from 'grammy'
 import { Message } from 'grammy_types'
 import i18next from '../i18n.ts'
 import { EMOJI_NINJA } from '../consts.ts'
+import { recordReceivedCommand } from './Stats.ts'
 
-export function helpCmd(ctx: Context) {
+export function helpCmd(ctx: Context, kv: Deno.Kv) {
     if (!ctx.message) return
     const message = ctx.message!
+
+    recordReceivedCommand(kv)
 
     if (message.chat.type !== 'private') {
         return privateChatHelp(ctx, message)

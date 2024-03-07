@@ -15,7 +15,14 @@ import {
     parseChatId
 } from '../utils/utils.ts'
 import { FromToBufferEntity } from '../classes/FromToBufferEntity.ts'
-
+import {
+    inviteToGroup,
+    migrateChatFromTo,
+    recordPublishedAnonMessageTime,
+    recordReceivedChatId,
+    recordReceivedMessage,
+    removeFromGroup,
+} from './Stats.ts'
 
 export async function processMessage(ctx: Context, kv: Deno.Kv, bot: Bot) {
     // console.log('AnonBot processMessage ctx', new Date().toISOString(), JSON.stringify(ctx))
@@ -23,17 +30,28 @@ export async function processMessage(ctx: Context, kv: Deno.Kv, bot: Bot) {
     const message = ctx.message!
     const fromUserId = message.from.id
 
+    if (message.group_chat_created || message.supergroup_chat_created) {
+        return newChatCreated(ctx, message, kv)
+    }
+    // TODO critical I would say, on chat deletion the event isn't catched, so leftMemberChat() doesn't work
     if (message.left_chat_member) {
-        return leftChatMember(ctx, message)
+        return leftChatMember(ctx, message, kv)
     }
     if (message.new_chat_members) {
-        return newChatMember(ctx, message)
+        return newChatMember(ctx, message, kv)
+    }
+    // TODO there are 2 events "migrate_from_chat_id" and "migrate_to_chat_id", may be consider to catch both
+    if (message.migrate_to_chat_id) {
+        return migrateChatMessage(ctx, message, kv, message.migrate_to_chat_id, bot)
     }
 
     // avoid reading chat messages
     if (message.chat.type !== 'private') {
         return
     }
+
+    // don't count messages that aren't private
+    recordReceivedMessage(kv)
 
     // filter allowed messages
     if (!isAcceptableMessage(message)) {
@@ -43,24 +61,30 @@ export async function processMessage(ctx: Context, kv: Deno.Kv, bot: Bot) {
     if (message.text) {
         const chatId = parseChatId(message.text)
         if (chatId) {
+            // TODO refactor it
             const setQ: BotKvQueueEntity = {
+                tableName: 'ANON_MESSAGES',
                 messageType: 'set',
                 key: fromUserId,
                 value: new FromToBufferEntity(chatId),
             }
             await kv.enqueue(setQ)
 
+            recordReceivedChatId(kv)
+
             return ctx.reply(i18next.t('process.chatIdAccepted', {chatId: chatId}))
         }
     }
 
-    const entry = await kv.get([fromUserId])
-    if (!entry || !entry.value) {
+    // TODO should/could it be enqueued?
+    const entry = await kv.get(['ANON_MESSAGES', fromUserId])
+    if (!entry.value) {
         return ctx.reply(i18next.t('process.inputChatIdRequest'))
     }
 
     const fromToEl = entry.value as FromToBufferEntity
     const deleteQ: BotKvQueueEntity = {
+        tableName: 'ANON_MESSAGES',
         messageType: 'delete',
         key: fromUserId,
     }
@@ -87,6 +111,8 @@ export async function processMessage(ctx: Context, kv: Deno.Kv, bot: Bot) {
     const messageCopy = await bot.api.copyMessage(fromToEl.toId, fromUserId, message.message_id, otherOptions)
     const sentToChatInfo = await bot.api.getChat(fromToEl.toId)
 
+    recordPublishedAnonMessageTime(kv, fromToEl.toId, message.date)
+
     // if chat.type === 'group', you can't link message by message_id. When does a group become a supergroup https://stackoverflow.com/a/62291433?
     if (sentToChatInfo.type === 'supergroup') {
         // Add action buttons (inline keyboard) to copied message in the chat
@@ -101,6 +127,7 @@ export async function processMessage(ctx: Context, kv: Deno.Kv, bot: Bot) {
         const privateMessageIK = new InlineKeyboard()
             .url(`${i18next.t('process.inlineSeeInTheChat')} ${EMOJI_EYES}`,
                 `https://t.me/c/${fromToEl.toId.toString().slice(-10)}/${messageCopy.message_id}`)
+        
         return ctx.reply(i18next.t('process.messageSent'), { reply_markup: privateMessageIK})
     }
 
@@ -111,23 +138,49 @@ export async function processMessage(ctx: Context, kv: Deno.Kv, bot: Bot) {
     // forward other message. Looks like that's not an issue, because when you forward, it's needed to add some text, and only the text is used by the bot
 }
 
-function leftChatMember(ctx: Context, message: Message) {
+function newChatCreated(ctx: Context, message: Message, kv: Deno.Kv) {
+    const chatId = message.chat.id
+
+    inviteToGroup(kv, message)
+
+    const ik = new InlineKeyboard()
+        .url(`${i18next.t('newChat.inlineSendAnonymously')} ${EMOJI_NINJA}`, `https://t.me/${ctx.me.username}?start=${chatId}`)
+    const otherOptions = {reply_markup: ik}
+    return ctx.reply(i18next.t('newChat.welcome', {chatId: chatId}), otherOptions)
+}
+
+function leftChatMember(ctx: Context, message: Message, kv: Deno.Kv) {
     const participant = message.left_chat_member!
     if (participant.id === ctx.me.id) {
         console.log('AnonBot, ow, I was kicked from chat_id:', message.chat.id)
+        return removeFromGroup(kv, message)
     }
 }
 
-function newChatMember(ctx: Context, message: Message) {
+function newChatMember(ctx: Context, message: Message, kv: Deno.Kv) {
     const participants = message.new_chat_members!
     for (let i = 0; i < participants.length; i++) {
         const participant = participants[i]
         if (participant.id === ctx.me.id) {
-            console.log('AnonBot, ow, I was added to chat_id:', message.chat.id)
+            const chatId = message.chat.id
+            console.log('AnonBot, ow, I was added to chat_id:', chatId)
+            
+            inviteToGroup(kv, message)
+            
             const ik = new InlineKeyboard()
-                .url(`${i18next.t('newChat.inlineSendAnonymously')} ${EMOJI_NINJA}`, `https://t.me/${ctx.me.username}?start=${message.chat.id}`)
+                .url(`${i18next.t('newChat.inlineSendAnonymously')} ${EMOJI_NINJA}`, `https://t.me/${ctx.me.username}?start=${chatId}`)
             const otherOptions = {reply_markup: ik}
-            return ctx.reply(i18next.t('newChat.welcome', {chatId: message.chat.id}), otherOptions)
+            return ctx.reply(i18next.t('newChat.welcome', {chatId: chatId}), otherOptions)
         }
     }
+}
+
+async function migrateChatMessage(ctx: Context, message: Message, kv: Deno.Kv, migrate_to_chat_id: number, bot: Bot) {
+    await migrateChatFromTo(kv, message, migrate_to_chat_id)
+
+    const ik = new InlineKeyboard()
+        .url(`${i18next.t('migrateChat.inlineSendAnonymously')} ${EMOJI_NINJA}`, `https://t.me/${ctx.me.username}?start=${migrate_to_chat_id}`)
+    const otherOptions = {reply_markup: ik}
+    // TODO there are 2 events: "migrate_to_chat_id" and "migrate_to_chat_id", it's better to process both of them
+    return bot.api.sendMessage(migrate_to_chat_id, i18next.t('migrateChat.welcome', {chatId: migrate_to_chat_id}), otherOptions)
 }

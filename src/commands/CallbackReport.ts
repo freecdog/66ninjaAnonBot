@@ -8,16 +8,19 @@ import {
     REPORTS_NEEDED_TO_DELETE,
 } from '../consts.ts'
 import { md5string } from '../utils/utils.ts'
+import { recordReceivedCallback } from './Stats.ts'
 
 const countCrosses = RegExp(String.raw`${EMOJI_CROSS_MARK}`, 'g')
 
-export async function processCallbackReport(ctx: Context) {
+export async function processCallbackReport(ctx: Context, kv: Deno.Kv) {
     if (!ctx.update.callback_query) {
         return
     }
     if (!ctx.update.callback_query.message) {
         return
     }
+
+    recordReceivedCallback(kv)
 
     const callback_query = ctx.update.callback_query
     const message = callback_query.message!
