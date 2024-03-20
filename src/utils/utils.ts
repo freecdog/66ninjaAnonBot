@@ -65,6 +65,9 @@ export function parseChatId(rawText: string): number | undefined {
     if (text.charAt(text.length - 1) === '.') {
         text = text.substring(0, text.length - 1)
     }
+    if (text.charAt(0) !== '-') {
+        text = '-' + text
+    }
     const chatId = parseInt(text)
     if (isNaN(chatId)) return
     if (text.length !== chatId.toString().length) return
