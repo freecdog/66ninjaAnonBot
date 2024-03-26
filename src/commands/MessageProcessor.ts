@@ -31,18 +31,18 @@ export async function processMessage(ctx: Context, kv: Deno.Kv, bot: Bot) {
     const fromUserId = message.from.id
 
     if (message.group_chat_created || message.supergroup_chat_created) {
-        return newChatCreated(ctx, message, kv)
+        return await newChatCreated(ctx, message, kv)
     }
     // TODO critical I would say, on chat deletion the event isn't catched, so leftMemberChat() doesn't work
     if (message.left_chat_member) {
-        return leftChatMember(ctx, message, kv)
+        return await leftChatMember(ctx, message, kv)
     }
     if (message.new_chat_members) {
-        return newChatMember(ctx, message, kv)
+        return await newChatMember(ctx, message, kv)
     }
     // TODO there are 2 events "migrate_from_chat_id" and "migrate_to_chat_id", may be consider to catch both
     if (message.migrate_to_chat_id) {
-        return migrateChatMessage(ctx, message, kv, message.migrate_to_chat_id, bot)
+        return await migrateChatMessage(ctx, message, kv, message.migrate_to_chat_id, bot)
     }
 
     // avoid reading chat messages
@@ -55,7 +55,7 @@ export async function processMessage(ctx: Context, kv: Deno.Kv, bot: Bot) {
 
     // filter allowed messages
     if (!isAcceptableMessage(message)) {
-        return ctx.reply(i18next.t('process.errorWrongMessageType'))
+        return await ctx.reply(i18next.t('process.errorWrongMessageType'))
     }
 
     if (message.text) {
@@ -72,14 +72,14 @@ export async function processMessage(ctx: Context, kv: Deno.Kv, bot: Bot) {
 
             recordReceivedChatId(kv)
 
-            return ctx.reply(i18next.t('process.chatIdAccepted', {chatId: chatId}))
+            return await ctx.reply(i18next.t('process.chatIdAccepted', {chatId: chatId}))
         }
     }
 
     // TODO should/could it be enqueued?
     const entry = await kv.get(['ANON_MESSAGES', fromUserId])
     if (!entry.value) {
-        return ctx.reply(i18next.t('process.inputChatIdRequest'))
+        return await ctx.reply(i18next.t('process.inputChatIdRequest'))
     }
 
     const fromToEl = entry.value as FromToBufferEntity
@@ -92,7 +92,7 @@ export async function processMessage(ctx: Context, kv: Deno.Kv, bot: Bot) {
 
     const isAllowed = await isAllowedToSend(ctx, fromToEl.toId, ctx.me.id, fromUserId)
     if (!isAllowed) {
-        return ctx.reply(i18next.t('process.errorNoPermissions'))
+        return await ctx.reply(i18next.t('process.errorNoPermissions'))
     }
 
     // prepare action buttons (inline keyboard)
@@ -128,10 +128,10 @@ export async function processMessage(ctx: Context, kv: Deno.Kv, bot: Bot) {
             .url(`${i18next.t('process.inlineSeeInTheChat')} ${EMOJI_EYES}`,
                 `https://t.me/c/${fromToEl.toId.toString().slice(-10)}/${messageCopy.message_id}`)
         
-        return ctx.reply(i18next.t('process.messageSent'), { reply_markup: privateMessageIK})
+        return await ctx.reply(i18next.t('process.messageSent'), { reply_markup: privateMessageIK})
     }
 
-    return ctx.reply(i18next.t('process.messageSent'))
+    return await ctx.reply(i18next.t('process.messageSent'))
     // Messages types https://core.telegram.org/bots/api#message
     // Works fine ctx.message.text (emoji too), photo, document, sticker, animation, poll, location
     // migrate_to_chat_id? group to supergroup (when chat history becomes visible for everyone)

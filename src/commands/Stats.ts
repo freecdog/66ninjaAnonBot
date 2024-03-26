@@ -41,11 +41,11 @@ export async function statsCmd(ctx: Context, kv: Deno.Kv, STATS_SECRET: string) 
     await recordReceivedCommand(kv)
 
     if (message.chat.type !== 'private') {
-        return chatStats(ctx, message, kv)
+        return await chatStats(ctx, message, kv)
     }
 
     if (message.text?.split(' ')[1] !== STATS_SECRET) {
-        return ctx.reply(i18next.t('stats.nothing'))
+        return await ctx.reply(i18next.t('stats.nothing'))
     }
 
     const [
@@ -65,14 +65,15 @@ export async function statsCmd(ctx: Context, kv: Deno.Kv, STATS_SECRET: string) 
 
     const activeChats = (await countAllActiveChats(kv)).value as bigint
 
-    ctx.reply(`activeChats: ${activeChats}
+    const mainStats = `activeChats: ${activeChats}
 TotalOperations: ${messagesCount + callbacksCount + commandsCount}
 ReceivedMessages: ${messagesCount}
 ReceivedChatIds: ${chatIdsCount}
 PublishedMessages: ${publishedMessagesCount}
 ReceivedCommands: ${commandsCount}
 ReceivedCallbacks: ${callbacksCount}
-DeletedMessages: ${deletedCount}`)
+DeletedMessages: ${deletedCount}`
+    return await ctx.reply(mainStats)
 
 // DEBUG SECTION
     // const dump = await getKVDumpByPrefix(kv, [])

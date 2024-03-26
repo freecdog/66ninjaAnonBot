@@ -14,11 +14,11 @@ export async function startCmd(ctx: Context, kv: Deno.Kv) {
     recordReceivedCommand(kv)
 
     if (!ctx.match) {
-        return ctx.reply(i18next.t('start.welcome'))
+        return await ctx.reply(i18next.t('start.welcome'))
     }
 
     if (message.chat.type !== 'private') {
-        return ctx.reply(i18next.t('start.paramsInPublicChat'))
+        return await ctx.reply(i18next.t('start.paramsInPublicChat'))
     }
 
     const match = ctx.match.toString()
@@ -28,12 +28,12 @@ export async function startCmd(ctx: Context, kv: Deno.Kv) {
     const fromUserId = message.from.id
 
     if (!parsedChatId) {
-        return ctx.reply(i18next.t('start.errorFirstParam'))
+        return await ctx.reply(i18next.t('start.errorFirstParam'))
     }
 
     const isAllowed = await isAllowedToSend(ctx, parsedChatId, ctx.me.id, fromUserId)
     if (!isAllowed) {
-        return ctx.reply(i18next.t('start.errorNoPermissions'))
+        return await ctx.reply(i18next.t('start.errorNoPermissions'))
     }
 
     const setQ: BotKvQueueEntity = {
@@ -44,5 +44,5 @@ export async function startCmd(ctx: Context, kv: Deno.Kv) {
     }
     await kv.enqueue(setQ)
 
-    return ctx.reply(i18next.t('start.inputMessageRequest', {chatId: parsedChatId}))
+    return await ctx.reply(i18next.t('start.inputMessageRequest', {chatId: parsedChatId}))
 }

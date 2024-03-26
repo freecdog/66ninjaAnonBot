@@ -78,7 +78,7 @@ export async function processCallbackReport(ctx: Context, kv: Deno.Kv) {
 
     if (reportsCount >= reportsNeeded) {
         recordMessageDeletion(kv, chatId)
-        return ctx.deleteMessage()
+        return await ctx.deleteMessage()
     }
-    return ctx.editMessageReplyMarkup({ reply_markup: replyMarkup })
+    return await ctx.editMessageReplyMarkup({ reply_markup: replyMarkup })
 }

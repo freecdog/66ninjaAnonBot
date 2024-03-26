@@ -4,7 +4,7 @@ import i18next from '../i18n.ts'
 import { EMOJI_NINJA } from '../consts.ts'
 import { recordReceivedCommand } from './Stats.ts'
 
-export function helpCmd(ctx: Context, kv: Deno.Kv) {
+export async function helpCmd(ctx: Context, kv: Deno.Kv) {
     if (!ctx.message) return
     const message = ctx.message!
 
@@ -14,7 +14,7 @@ export function helpCmd(ctx: Context, kv: Deno.Kv) {
         return privateChatHelp(ctx, message)
     }
 
-    return publicChatHelp(ctx)
+    return await publicChatHelp(ctx)
 }
 
 function privateChatHelp(ctx: Context, message: Message) {

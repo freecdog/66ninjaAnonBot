@@ -16,5 +16,5 @@ export async function cancelCmd(ctx: Context, kv: Deno.Kv) {
         key: fromUserId,
     }
     await kv.enqueue(deleteQ)
-    return ctx.reply(i18next.t('cancel.default'))
+    return await ctx.reply(i18next.t('cancel.default'))
 }
