@@ -119,7 +119,7 @@ export async function processMessage(ctx: Context, kv: Deno.Kv, bot: Bot) {
         const chatMessageCopyIK = new InlineKeyboard()
             .url(`${i18next.t('process.inlineReplyAnonymously')} ${EMOJI_RIGHT_ARROW_CURVING_LEFT}`, `https://t.me/${ctx.me.username}?start=${fromToEl.toId}${START_PARAMS_SEPARATOR}${messageCopy.message_id}`)
             .text(`${EMOJI_CROSS_MARK}`, 'callbackReport')
-        bot.api.editMessageReplyMarkup(fromToEl.toId, messageCopy.message_id, {
+        await bot.api.editMessageReplyMarkup(fromToEl.toId, messageCopy.message_id, {
             reply_markup: chatMessageCopyIK
         }).then()
 
