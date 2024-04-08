@@ -24,7 +24,7 @@
     "errorNoPermissions": "sorry, I can't process this message, no permissions...",
     "errorWrongMessageType": "sorry, unsupported message type",
     "inlineReplyAnonymously": "reply",
-    "inlineSeeInTheChat": "see in the chat",
+    "inlineSeeInTheChat": "in the chat",
     "inlineSendAnonymously": "send anonymously",
     "inputChatIdRequest": "Which chat do you want to send an anonymous message to? Please send me a chat_id in a separate message",
     "messageSent": "The anonymous message has been sent"

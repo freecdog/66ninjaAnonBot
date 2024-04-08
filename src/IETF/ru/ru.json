@@ -24,7 +24,7 @@
     "errorNoPermissions": "Извините, я не могу обработать это сообщение, недостаточно прав...",
     "errorWrongMessageType": "Извините, я не обрабатываю такие сообщения",
     "inlineReplyAnonymously": "ответить",
-    "inlineSeeInTheChat": "посмотреть в чате",
+    "inlineSeeInTheChat": "в чате",
     "inlineSendAnonymously": "написать",
     "inputChatIdRequest": "В какой чат вы хотите отправить анонимное сообщение? Отправьте мне chat_id отдельным сообщением",
     "messageSent": "Анонимное сообщение отправлено"

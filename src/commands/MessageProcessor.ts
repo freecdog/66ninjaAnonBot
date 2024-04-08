@@ -124,9 +124,10 @@ export async function processMessage(ctx: Context, kv: Deno.Kv, bot: Bot) {
         }).then()
 
         // Reply privately to the user's message with button to see the message in the group
+        const seeInChatUrl = `https://t.me/c/${fromToEl.toId.toString().slice(-10)}/${messageCopy.message_id}`
         const privateMessageIK = new InlineKeyboard()
-            .url(`${i18next.t('process.inlineSeeInTheChat')} ${EMOJI_EYES}`,
-                `https://t.me/c/${fromToEl.toId.toString().slice(-10)}/${messageCopy.message_id}`)
+            .url(`${i18next.t('process.inlineSeeInTheChat')} ${EMOJI_EYES}`, seeInChatUrl)
+            .url(`${i18next.t('process.inlineSendAnonymously')} ${EMOJI_NINJA}`, `https://t.me/${ctx.me.username}?start=${fromToEl.toId}`)
         
         return await ctx.reply(i18next.t('process.messageSent'), { reply_markup: privateMessageIK})
     }
